@@ -1,4 +1,5 @@
 from pathlib import Path
+import csv
 import numpy as np
 import pandas as pd
 
@@ -6,8 +7,22 @@ FEATURES = ['open', 'high', 'low', 'close', 'Log_Volumen', 'Retorno',
             'Distancia_MA7', 'Distancia_MA30', 'Volatilidad_7']
 
 
-def preparar(ruta: Path):
-    df = pd.read_csv(ruta).rename(columns={'Unnamed: 0': 'Date'})
+def preparar(ruta: Path, max_rows=None):
+    if max_rows is not None and max_rows < 1:
+        raise ValueError('El límite de filas debe ser positivo.')
+    # Rechazar cabeceras patológicas antes de crear miles de columnas en Pandas.
+    with ruta.open(encoding='utf-8-sig', newline='') as source:
+        header = source.readline(8193)
+    if len(header) > 8192:
+        raise ValueError('La cabecera del CSV supera los 8 KB permitidos.')
+    columns = next(csv.reader([header]), [])
+    if len(columns) > 64 or len(columns) != len(set(columns)):
+        raise ValueError('El CSV contiene demasiadas columnas o nombres repetidos.')
+    if 'Date' in columns and 'Unnamed: 0' in columns:
+        raise ValueError('Utiliza una sola columna de fecha: Date o Unnamed: 0.')
+    df = pd.read_csv(ruta, nrows=max_rows+1 if max_rows is not None else None).rename(columns={'Unnamed: 0': 'Date'})
+    if max_rows is not None and len(df) > max_rows:
+        raise ValueError(f'El límite es {max_rows:,} filas de entrada por CSV.')
     required = {'Date', 'ticker', 'open', 'high', 'low', 'close', 'volume'}
     if required - set(df.columns):
         raise ValueError(f'Faltan columnas: {sorted(required - set(df.columns))}')

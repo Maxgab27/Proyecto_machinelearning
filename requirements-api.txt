@@ -1,0 +1,6 @@
+-r requirements-base.txt
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+python-multipart>=0.0.20,<1
+httpx>=0.28,<1
+psutil>=7.2,<8

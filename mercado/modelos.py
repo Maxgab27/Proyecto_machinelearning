@@ -1,5 +1,8 @@
-import copy
-import os
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import joblib
@@ -10,7 +13,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, roc_auc_score, confusion_matrix, log_loss)
-from .datos import FEATURES, secuencias
+from .datos import FEATURES
 
 
 def evaluar(y, probability):
@@ -56,68 +59,21 @@ def entrenar(df, parts, out, epochs=30, window=20, seed=42, mode='completo'):
     joblib.dump(scaler, modeldir / 'escalador_redes.joblib')
 
     if mode == 'completo':
-        print('Entrenando red PyTorch...', flush=True)
-        import torch
-        torch.set_num_threads(2)
-        torch.manual_seed(seed)
-        torch.use_deterministic_algorithms(True)
-        net = torch.nn.Sequential(torch.nn.Linear(len(FEATURES), 32), torch.nn.ReLU(),
-                                  torch.nn.Linear(32, 16), torch.nn.ReLU(), torch.nn.Linear(16, 1))
-        optimizer = torch.optim.Adam(net.parameters(), lr=.001, weight_decay=.001)
-        lossfn = torch.nn.BCEWithLogitsLoss()
-        xt, yt = torch.from_numpy(z[tr]), torch.from_numpy(y[tr].astype('float32')).view(-1, 1)
-        xv, yv = torch.from_numpy(z[va]), torch.from_numpy(y[va].astype('float32')).view(-1, 1)
-        best, stale, state, history = float('inf'), 0, None, []
-        for epoch in range(epochs):
-            net.train()
-            total = 0.
-            for start in range(0, len(xt), 64):
-                optimizer.zero_grad()
-                loss = lossfn(net(xt[start:start+64]), yt[start:start+64])
-                loss.backward()
-                optimizer.step()
-                total += loss.item()*len(xt[start:start+64])
-            net.eval()
-            with torch.no_grad():
-                vl = lossfn(net(xv), yv).item()
-            history.append({'epoch': epoch+1, 'loss': total/len(xt), 'val_loss': vl})
-            if vl < best-1e-5:
-                best, stale, state = vl, 0, copy.deepcopy(net.state_dict())
-            else:
-                stale += 1
-            if stale >= 5:
-                break
-        net.load_state_dict(state)
-        net.eval()
-        with torch.no_grad():
-            probabilities['PyTorch_MLP'] = torch.sigmoid(net(torch.from_numpy(z[te]))).numpy().ravel()
-            validation['PyTorch_MLP'] = evaluar(y[va], torch.sigmoid(net(xv)).numpy().ravel())
-        torch.save(net.state_dict(), modeldir / 'pytorch_mlp.pt')
-        histories['PyTorch_MLP'] = history
-
-        print('Entrenando LSTM TensorFlow/Keras...', flush=True)
-        os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
-        os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')
-        import tensorflow as tf
-        tf.config.threading.set_intra_op_parallelism_threads(2)
-        tf.config.threading.set_inter_op_parallelism_threads(2)
-        tf.keras.utils.set_random_seed(seed)
-        tf.config.experimental.enable_op_determinism()
-        train_seq = tr[tr >= window-1]
-        xs, vs, ts = (secuencias(z, idx, window) for idx in [train_seq, va, te])
-        lstm = tf.keras.Sequential([tf.keras.Input(shape=(window, len(FEATURES))),
-                                   tf.keras.layers.LSTM(16), tf.keras.layers.Dense(8, activation='relu'),
-                                   tf.keras.layers.Dense(1, activation='sigmoid')])
-        lstm.compile(optimizer=tf.keras.optimizers.Adam(.001), loss='binary_crossentropy')
-        hist = lstm.fit(xs, y[train_seq], validation_data=(vs, y[va]), epochs=epochs,
-                        batch_size=64, shuffle=False, verbose=0,
-                        callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5,
-                                                                    restore_best_weights=True)])
-        probabilities['Keras_LSTM'] = lstm.predict(ts, verbose=0).ravel()
-        validation['Keras_LSTM'] = evaluar(y[va], lstm.predict(vs, verbose=0).ravel())
-        lstm.save(modeldir / 'keras_lstm.keras')
-        histories['Keras_LSTM'] = [{'epoch': i+1, 'loss': float(l), 'val_loss': float(v)}
-                                 for i, (l, v) in enumerate(zip(hist.history['loss'], hist.history['val_loss']))]
+        # Al salir cada hijo, el SO libera su runtime completo antes del siguiente.
+        with tempfile.TemporaryDirectory(prefix='.redes-', dir=out) as tmp:
+            inputs = Path(tmp)/'entrada.npz'
+            np.savez(inputs, z=z, y=y, tr=tr, va=va, te=te)
+            for engine in ('pytorch', 'keras'):
+                print(f'Entrenando {engine} en proceso aislado...', flush=True)
+                output = Path(tmp)/f'{engine}.json'
+                subprocess.run([sys.executable, '-X', 'utf8', '-m', 'mercado.redes_worker',
+                                engine, str(inputs.resolve()), str(output.resolve()),
+                                str(modeldir.resolve()), str(epochs), str(window), str(seed)],
+                               cwd=Path(__file__).resolve().parents[1], check=True)
+                result = json.loads(output.read_text(encoding='utf-8'))
+                probabilities.update({k:np.asarray(v) for k,v in result['probabilities'].items()})
+                validation.update({k:evaluar(y[va], v) for k,v in result['validation'].items()})
+                histories.update(result['histories'])
     prediction = df.iloc[te][['Date', 'Fecha_Objetivo', 'close', 'Close_Siguiente', 'Objetivo']].copy()
     for name, probability in probabilities.items():
         metrics[name] = evaluar(y[te], probability)

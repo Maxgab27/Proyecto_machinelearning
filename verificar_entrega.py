@@ -1,5 +1,6 @@
 """Verifica artefactos reales sin repetir entrenamiento."""
 import os
+import argparse
 from pathlib import Path
 import json
 import hashlib
@@ -15,19 +16,24 @@ os.environ.setdefault('MPLCONFIGDIR', str(ROOT / 'tmp' / 'matplotlib'))
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--csv', type=Path, default=ROOT/'datos'/'arch_financiero.csv')
+    parser.add_argument('--salida', type=Path, default=ROOT/'resultados')
+    args = parser.parse_args()
     from mercado.datos import preparar, particiones, secuencias, FEATURES
     from mercado.modelos import evaluar
     from mercado.informe import escribir
-    out = ROOT/'resultados'
+    out = args.salida.resolve()
     summary = json.loads((out/'resumen.json').read_text(encoding='utf-8'))
     assert (out/'COMPLETADO.json').is_file(), 'La ejecución no está completa.'
-    df, _ = preparar(ROOT/'datos'/'arch_financiero.csv')
+    df, _ = preparar(args.csv)
     parts = particiones(df)
     te = parts['test']
     x = df[FEATURES].to_numpy(dtype='float32')
     stored = pd.read_csv(out/'predicciones.csv')
     assert len(stored) == len(te)
-    assert summary['datos']['sha256_csv'] == hashlib.sha256((ROOT/'datos'/'arch_financiero.csv').read_bytes()).hexdigest()
+    with args.csv.open('rb') as source:
+        assert summary['datos']['sha256_csv'] == hashlib.file_digest(source, 'sha256').hexdigest()
     probs = {}
     for name, filename in [('Logistica', 'logistica.joblib'), ('Base_mayoritaria', 'base.joblib')]:
         probs[name] = joblib.load(out/'modelos'/filename).predict_proba(x[te])[:, 1]

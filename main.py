@@ -12,6 +12,8 @@ os.environ.setdefault('MPLCONFIGDIR', str(ROOT / 'tmp' / 'matplotlib'))
 os.environ.setdefault('KERAS_HOME', str(ROOT / 'tmp' / 'keras'))
 os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')
+for name in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
+    os.environ.setdefault(name, '1')
 
 
 def main():
@@ -22,6 +24,8 @@ def main():
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--ventana', type=int, default=20)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--max-filas', type=int, default=None,
+                        help='Límite de filas de entrada para el servicio web')
     parser.add_argument('--modo', choices=['completo', 'base'], default='completo',
                         help='base sirve para diagnóstico; no cubre las redes del entregable')
     args = parser.parse_args()
@@ -30,7 +34,6 @@ def main():
     from mercado.datos import preparar, particiones, FEATURES
     from mercado.modelos import entrenar
     from mercado.nlp import analizar
-    from mercado.graficos import generar
     from mercado.informe import escribir
     import numpy as np
     np.random.seed(args.seed)
@@ -38,11 +41,12 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / 'COMPLETADO.json').unlink(missing_ok=True)
     print('Validando datos y creando indicadores...', flush=True)
-    df, audit = preparar(args.csv)
+    df, audit = preparar(args.csv, max_rows=args.max_filas)
     parts = particiones(df)
     if args.ventana > len(parts['train']) // 2:
         parser.error('La ventana es demasiado grande para el conjunto de entrenamiento.')
-    audit['sha256_csv'] = hashlib.sha256(args.csv.read_bytes()).hexdigest()
+    with args.csv.open('rb') as source:
+        audit['sha256_csv'] = hashlib.file_digest(source, 'sha256').hexdigest()
     audit['particiones'] = {name: {'filas': len(idx), 'inicio': str(df.Date.iloc[idx[0]].date()),
                                   'fin': str(df.Date.iloc[idx[-1]].date()),
                                   'ultima_fecha_objetivo': str(df.Fecha_Objetivo.iloc[idx[-1]].date())}
@@ -53,14 +57,21 @@ def main():
     print('Validando y entrenando modelos...', flush=True)
     metrics, validation, histories, prediction, selected = entrenar(
         df, parts, out, epochs=args.epochs, window=args.ventana, seed=args.seed, mode=args.modo)
-    versions = {name: importlib.metadata.version(name) for name in
-                ['numpy', 'pandas', 'scipy', 'scikit-learn', 'nltk', 'torch', 'tensorflow', 'keras', 'matplotlib', 'seaborn', 'pypdf']}
+    versions = {}
+    for name in ['numpy', 'pandas', 'scipy', 'scikit-learn', 'nltk', 'torch', 'tensorflow', 'keras', 'matplotlib', 'seaborn', 'pypdf']:
+        try:
+            versions[name] = importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            if args.modo == 'completo' or name not in {'torch', 'tensorflow', 'keras'}:
+                raise
+            versions[name] = 'No instalado (modo base)'
     result = {'estado': 'completado', 'fecha_utc': datetime.now(timezone.utc).isoformat(),
               'configuracion': {'modo': args.modo, 'epochs_max': args.epochs, 'ventana': args.ventana,
                                 'seed': args.seed, 'C_logistica': selected, 'features': FEATURES},
               'datos': audit, 'metricas_test': metrics, 'metricas_validacion': validation,
               'nlp': nlp, 'versiones': versions}
     (out / 'resumen.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    from mercado.graficos import generar
     generar(df, metrics, histories, prediction, terms, out / 'graficos')
     escribir(result, out)
     (out / 'COMPLETADO.json').write_text(json.dumps({'fecha_utc': result['fecha_utc'], 'modo': args.modo}), encoding='utf-8')

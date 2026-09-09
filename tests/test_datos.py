@@ -61,6 +61,15 @@ class DatosTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'conflictivos'):
             preparar(self.path)
 
+    def test_limite_de_filas_y_cabecera_antes_de_preparar(self):
+        with self.assertRaisesRegex(ValueError, 'filas de entrada'):
+            preparar(self.path, max_rows=200)
+        df, _ = preparar(self.path, max_rows=250)
+        self.assertEqual(len(df), 220)
+        self.path.write_text(','.join(f'col{i}' for i in range(65))+'\n', encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'demasiadas columnas'):
+            preparar(self.path)
+
 
 if __name__ == '__main__':
     unittest.main()

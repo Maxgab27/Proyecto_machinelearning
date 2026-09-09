@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     node = shutil.which('node')
     vite = ROOT/'frontend'/'node_modules'/'vite'/'bin'/'vite.js'
-    missing = [name for name in ['fastapi','uvicorn','multipart'] if importlib.util.find_spec(name) is None]
+    missing = [name for name in ['fastapi','uvicorn','multipart','psutil'] if importlib.util.find_spec(name) is None]
     if missing:
         parser.exit(1, 'Faltan dependencias web. Ejecuta: .\\.venv\\Scripts\\python.exe -m pip install -r requirements-web.txt\n')
     if not node or not vite.is_file():

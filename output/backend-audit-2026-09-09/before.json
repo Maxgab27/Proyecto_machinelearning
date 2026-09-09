@@ -1,0 +1,9 @@
+{
+  "label": "before",
+  "mode": "completo",
+  "rows": 6014,
+  "epochs": 2,
+  "exit_code": 0,
+  "seconds": 26.48,
+  "peak_tree_rss_mib": 708.36
+}

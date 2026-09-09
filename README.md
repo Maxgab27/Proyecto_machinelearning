@@ -10,6 +10,9 @@ Abre [Mercado Lab](http://127.0.0.1:8501/): consulta resultados, carga CSV y eje
 análisis desde el navegador. Instalación web, pruebas y futura publicación en Vercel:
 [FRONTEND.md](FRONTEND.md). Para ejecutar toda la suite, instalar las dependencias web.
 
+Para habilitar cargas y entrenamientos desde Vercel: [configurar backend en Render](BACKEND_RENDER.md).
+Evaluación local, consumo medido y pruebas: [auditoría del backend](BACKEND_AUDIT.md).
+
 Solución académica modular con Pandas/NumPy, regresión logística (Scikit-learn),
 MLP (PyTorch), LSTM (TensorFlow/Keras), NLP (NLTK/SciPy), Matplotlib y Seaborn.
 Predice subida frente a bajada/igualdad del cierre de la próxima sesión de GGAL.
@@ -18,7 +21,7 @@ Predice subida frente a bajada/igualdad del cierre de la próxima sesión de GGA
 
 ```powershell
 python -m venv .venv
-./.venv/Scripts/python.exe -m pip install -r requirements-lock.txt
+./.venv/Scripts/python.exe -m pip install -r requirements-web-lock.txt
 ./.venv/Scripts/python.exe -m unittest discover -s tests -v
 ./.venv/Scripts/python.exe main.py --epochs 30
 ./.venv/Scripts/python.exe verificar_entrega.py

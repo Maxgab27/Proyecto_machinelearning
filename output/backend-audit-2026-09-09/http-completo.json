@@ -1,0 +1,29 @@
+{
+  "mode": "completo",
+  "rows": 6014,
+  "epochs": 2,
+  "memory_limit_mb": null,
+  "startup_seconds": 1.14,
+  "idle_rss_mib": 54.78,
+  "api_rss_after_uploads_mib": [
+    55.61,
+    55.7,
+    55.68
+  ],
+  "state": {
+    "id": "09fd8890e4aa465896523569897fd48c",
+    "status": "completed",
+    "mode": "completo",
+    "dataset": "CSV cargado",
+    "created": "2026-09-09T07:38:22.457640+00:00",
+    "peak_memory_mb": 648.91,
+    "finished": "2026-09-09T07:38:46.770792+00:00"
+  },
+  "health_requests": 125,
+  "health_max_ms": 16.0,
+  "health_p95_ms": 16.0,
+  "final_api_rss_mib": 57.24,
+  "status": "passed",
+  "peak_tree_rss_mib": 655.17,
+  "total_seconds": 28.75
+}
