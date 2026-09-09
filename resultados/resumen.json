@@ -1,0 +1,215 @@
+{
+  "estado": "completado",
+  "fecha_utc": "2026-09-07T02:53:18.007067+00:00",
+  "configuracion": {
+    "modo": "completo",
+    "epochs_max": 30,
+    "ventana": 20,
+    "seed": 42,
+    "C_logistica": 10.0,
+    "features": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "Log_Volumen",
+      "Retorno",
+      "Distancia_MA7",
+      "Distancia_MA30",
+      "Volatilidad_7"
+    ]
+  },
+  "datos": {
+    "filas_originales": 6014,
+    "filas_utiles": 5984,
+    "filas_descartadas": 30,
+    "ticker": "GGAL",
+    "inicio": "2000-09-05",
+    "fin": "2024-06-18",
+    "memoria_features_bytes": 215424,
+    "sha256_csv": "2abdfcafbe15bcd1388fb37d251280cbb4bf2669da69411b340546d09b6af5ed",
+    "particiones": {
+      "train": {
+        "filas": 3589,
+        "inicio": "2000-09-05",
+        "fin": "2014-12-10",
+        "ultima_fecha_objetivo": "2014-12-11"
+      },
+      "val": {
+        "filas": 1196,
+        "inicio": "2014-12-12",
+        "fin": "2019-09-13",
+        "ultima_fecha_objetivo": "2019-09-16"
+      },
+      "test": {
+        "filas": 1197,
+        "inicio": "2019-09-17",
+        "fin": "2024-06-18",
+        "ultima_fecha_objetivo": "2024-06-20"
+      }
+    }
+  },
+  "metricas_test": {
+    "Logistica": {
+      "exactitud": 0.5037593984962406,
+      "precision": 0.5038167938931297,
+      "recall": 0.2214765100671141,
+      "f1": 0.3076923076923077,
+      "roc_auc": 0.48617237490089227,
+      "log_loss": 0.6998012661933899,
+      "matriz_confusion": [
+        [
+          471,
+          130
+        ],
+        [
+          464,
+          132
+        ]
+      ]
+    },
+    "Base_mayoritaria": {
+      "exactitud": 0.5020885547201337,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.5,
+      "log_loss": 17.946547552141872,
+      "matriz_confusion": [
+        [
+          601,
+          0
+        ],
+        [
+          596,
+          0
+        ]
+      ]
+    },
+    "PyTorch_MLP": {
+      "exactitud": 0.49874686716791977,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.48316564115735516,
+      "log_loss": 0.6972065567970276,
+      "matriz_confusion": [
+        [
+          597,
+          4
+        ],
+        [
+          596,
+          0
+        ]
+      ]
+    },
+    "Keras_LSTM": {
+      "exactitud": 0.5221386800334169,
+      "precision": 0.7,
+      "recall": 0.07046979865771812,
+      "f1": 0.12804878048780488,
+      "roc_auc": 0.5233615115746686,
+      "log_loss": 0.6948879361152649,
+      "matriz_confusion": [
+        [
+          583,
+          18
+        ],
+        [
+          554,
+          42
+        ]
+      ]
+    }
+  },
+  "metricas_validacion": {
+    "Logistica": {
+      "exactitud": 0.5083612040133779,
+      "precision": 0.5866666666666667,
+      "recall": 0.07321131447587355,
+      "f1": 0.1301775147928994,
+      "roc_auc": 0.5249625973517527,
+      "log_loss": 0.7317783236503601,
+      "matriz_confusion": [
+        [
+          564,
+          31
+        ],
+        [
+          557,
+          44
+        ]
+      ]
+    },
+    "PyTorch_MLP": {
+      "exactitud": 0.4974916387959866,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.5263985793984816,
+      "log_loss": 0.7060019373893738,
+      "matriz_confusion": [
+        [
+          595,
+          0
+        ],
+        [
+          601,
+          0
+        ]
+      ]
+    },
+    "Keras_LSTM": {
+      "exactitud": 0.5,
+      "precision": 0.5061728395061729,
+      "recall": 0.20465890183028287,
+      "f1": 0.2914691943127962,
+      "roc_auc": 0.48948391336567904,
+      "log_loss": 0.6947972178459167,
+      "matriz_confusion": [
+        [
+          475,
+          120
+        ],
+        [
+          478,
+          123
+        ]
+      ]
+    }
+  },
+  "nlp": {
+    "fuentes": [
+      {
+        "archivo": "galicia_2q2024.pdf",
+        "titulo": "Grupo Financiero Galicia - Financial Report 2nd quarter 2024",
+        "url": "https://gfgsa-stag.s3.amazonaws.com/app/uploads/2024/08/22204706/Press_Release_GFG_2Q2024_EN.pdf",
+        "pagina_institucional": "https://www.gfgsa.com/en/financial-information",
+        "fecha_publicacion": "2024-08-22",
+        "idioma": "en",
+        "uso": "Análisis académico de reporte público; derechos del emisor. No se incorpora como predictor al CSV que termina en junio de 2024.",
+        "paginas": 55
+      }
+    ],
+    "paginas_analizadas": 54,
+    "vocabulario": 806,
+    "tokens": 3978,
+    "memoria_dispersa_bytes": 32800,
+    "memoria_densa_equivalente_bytes": 348192,
+    "alcance": "Tokenización y extracción descriptiva; no clasifica sentimiento ni alimenta los modelos bursátiles."
+  },
+  "versiones": {
+    "numpy": "2.5.3",
+    "pandas": "2.3.3",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.0",
+    "nltk": "3.10.3",
+    "torch": "2.14.0",
+    "tensorflow": "2.21.0",
+    "keras": "3.15.1",
+    "matplotlib": "3.11.1",
+    "seaborn": "0.13.2",
+    "pypdf": "6.17.0"
+  }
+}

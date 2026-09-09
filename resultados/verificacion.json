@@ -1,0 +1,13 @@
+{
+  "estado": "correcto",
+  "modelos_recargados": [
+    "Logistica",
+    "Base_mayoritaria",
+    "PyTorch_MLP",
+    "Keras_LSTM"
+  ],
+  "predicciones_verificadas_por_modelo": 1197,
+  "tolerancia_probabilidades": 1e-06,
+  "csv_original_verificado": true,
+  "escalador_solo_entrenamiento": true
+}
